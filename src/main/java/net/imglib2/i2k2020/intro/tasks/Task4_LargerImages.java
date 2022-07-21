@@ -1,5 +1,6 @@
 package net.imglib2.i2k2020.intro.tasks;
 
+import net.imglib2.Cursor;
 import net.imglib2.IterableInterval;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
@@ -17,9 +18,12 @@ public class Task4_LargerImages {
 	 */
 	public static void testIteration() {
 
-		Img<UnsignedByteType> imgA = null, imgB = null;
+		// array image
+		final Img<UnsignedByteType> imgA = ArrayImgs.unsignedBytes(5, 5);
 
-		//TODO: fill
+		// cell image with blocksize 2
+		final ImgFactory<UnsignedByteType> cellImgFactory = new CellImgFactory<>(new UnsignedByteType(), 2);
+		final Img<UnsignedByteType> imgB = cellImgFactory.create(5, 5);
 
 		testIteration(imgA, imgB);
 	}
@@ -32,9 +36,15 @@ public class Task4_LargerImages {
 	 */
 	public static void testIteration(final IterableInterval<?> imgA, final IterableInterval<?> imgB) {
 
-		//TODO: fill
+		final Cursor<?> cursorA = imgA.localizingCursor();
+		final Cursor<?> cursorB = imgB.localizingCursor();
 
-		// iterate both images, write out positions next to each other when iterating
+		while (cursorA.hasNext() && cursorB.hasNext()) {
+			cursorA.fwd();
+			cursorB.fwd();
+
+			System.out.println(Util.printCoordinates(cursorA) + " <> " + Util.printCoordinates(cursorB) + " equal? " + Util.locationsEqual(cursorA, cursorB));
+		}
 	}
 
 	/**
