@@ -20,8 +20,9 @@ public class Task2_GenericTypes {
 	 *            - the value
 	 */
 	public static <T extends NumericType<T>> void add(final Img<T> img, final T value) {
-
-		//TODO: fill
+		for(T pixel: img) {
+			pixel.add(value);
+		}
 	}
 
 	/**
@@ -31,8 +32,9 @@ public class Task2_GenericTypes {
 	 *            - the input
 	 */
 	public static <T extends RealType<T>> void sqrt(final Img<T> img) {
-
-		//TODO: fill
+		for(T pixel: img) {
+			pixel.setReal(Math.sqrt(pixel.getRealDouble()));
+		}
 	}
 
 	public static void main(String[] args) {
@@ -57,5 +59,8 @@ public class Task2_GenericTypes {
 		sqrt(imgUB);
 		// sqrt( imgC ); <<< build error
 		// sqrt( imgARGB ); <<< build error
+
+		for (final FloatType type : imgF)
+			System.out.println(type);
 	}
 }
