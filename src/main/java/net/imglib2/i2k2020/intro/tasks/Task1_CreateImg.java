@@ -48,7 +48,7 @@ public class Task1_CreateImg {
 		FloatType value = randomAccess.setPositionAndGet(2, 2);
 		System.out.format("central pixel @ (2,2) = %f.\n", value.get());
 		
-		return null;
+		return img;
 	}
 
 	/**
