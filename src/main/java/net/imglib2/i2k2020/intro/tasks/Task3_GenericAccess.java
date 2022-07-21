@@ -2,6 +2,8 @@ package net.imglib2.i2k2020.intro.tasks;
 
 import net.imglib2.IterableInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.Cursor;
+import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.type.Type;
 import net.imglib2.type.numeric.real.FloatType;
@@ -19,10 +21,15 @@ public class Task3_GenericAccess {
 	 * @return
 	 */
 	public static <T extends Comparable<T> & Type<T>> T max(final Iterable<T> iterable) {
+		final T currentMax = iterable.iterator().next().copy();
 
-		//TODO: fill
+		for (final T pixel: iterable) {
+			if (pixel.compareTo(currentMax) > 0) {
+				currentMax.set(pixel);
+			}
+		}
 
-		return null;
+		return currentMax;
 	}
 
 	/**
@@ -34,12 +41,20 @@ public class Task3_GenericAccess {
 	 */
 	public static <T extends Comparable<T> & Type<T>> Pair<T, long[]> maxWithLocation(final IterableInterval<T> iterable) {
 
-		T max = null;
-		long[] position = null;
+		final Cursor<T> cursor = iterable.cursor();
+		final T currentMax = cursor.next().copy();
+		long[] position = new long[2];
+		cursor.localize(position);
 
-		//TODO: fill
+		while (cursor.hasNext()) {
+			cursor.fwd();
+			if (cursor.get().compareTo(currentMax) > 0) {
+				currentMax.set(cursor.get());
+				cursor.localize(position);
+			}
+		}
 
-		return new ValuePair<>(max, position);
+		return new ValuePair<>(currentMax, position);
 	}
 
 	/**
@@ -53,10 +68,12 @@ public class Task3_GenericAccess {
 
 		// create a RandomAccess
 		// set it to the center pixel in all dimensions
+		long[] centerPosition = new long[rai.numDimensions()];
+		for (int d=0; d<rai.numDimensions(); ++d) {
+			centerPosition[d] = rai.dimension(d) / 2;
+		}
 
-		//TODO: fill
-
-		return null;
+		return rai.getAt(centerPosition);
 	}
 
 	public static void main(String[] args) {
