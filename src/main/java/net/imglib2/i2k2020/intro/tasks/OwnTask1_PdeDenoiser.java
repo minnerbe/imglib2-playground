@@ -2,14 +2,15 @@ package net.imglib2.i2k2020.intro.tasks;
 
 import ij.IJ;
 import net.imglib2.img.Img;
-import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Cursor;
 import net.imglib2.view.Views;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.img.imageplus.ImagePlusImgs;
 
@@ -168,6 +169,10 @@ public class OwnTask1_PdeDenoiser {
 		}
 	}
 
+	public <T extends RealType<T> & NativeType<T>> OwnTask1_PdeDenoiser() {
+		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.1);
+	}
+
 	public static <T extends RealType<T> & NativeType<T>> void main(String[] args) {
 		// open grayscale image
 		final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/noisy-image.pgm";
@@ -178,5 +183,57 @@ public class OwnTask1_PdeDenoiser {
 		denoise(img, 10);
 
 		ImageJFunctions.show(img);
+
+		new OwnTask1_PdeDenoiser();
+	}
+
+	private class PeronaMalikDenoiser {
+		private DoubleType alpha;
+		private DoubleType beta;
+		private RandomAccessibleInterval<DoubleType> currentState;
+		private RandomAccessibleInterval<DoubleType>[] flux;
+
+		public PeronaMalikDenoiser(double alpha, double beta) {
+			setParameters(alpha, beta);
+			currentState = null;
+			flux = null;
+		}
+
+		public void setParameters(double alpha, double beta) {
+			this.alpha = new DoubleType(alpha);
+			this.beta = new DoubleType(beta);
+		}
+
+		public <T extends RealType<T> & NativeType<T>> Img<T> denoise(Img<T> img, int nSteps) {
+			convertImageToState(img);
+			for (int k=0; k<nSteps; ++k) {
+				computeFlux();
+				updateState();
+			}
+			cleanUp();
+
+			return stateAsImageOfType(img.firstElement().getClass());
+		}
+
+		private <T extends RealType<T> & NativeType<T>> void convertImageToState(Img<T> img) {
+
+		}
+
+		private void computeFlux() {
+
+		}
+		
+		private void updateState() {
+
+		}
+		
+		private <T extends RealType<T> & NativeType<T>> Img<T> stateAsImageOfType(Class<?> cls) {
+
+			return null;
+		}
+
+		private void cleanUp() {
+			flux = null;
+		}
 	}
 }
