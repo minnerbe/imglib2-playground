@@ -7,6 +7,7 @@ import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Cursor;
 import net.imglib2.view.Views;
+import net.imglib2.converter.Converters;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
@@ -170,10 +171,6 @@ public class OwnTask1_PdeDenoiser {
 	}
 
 	public <T extends RealType<T> & NativeType<T>> OwnTask1_PdeDenoiser() {
-		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.1);
-	}
-
-	public static <T extends RealType<T> & NativeType<T>> void main(String[] args) {
 		// open grayscale image
 		final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/noisy-image.pgm";
 		// final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/plane-with-noise.pgm";
@@ -184,6 +181,11 @@ public class OwnTask1_PdeDenoiser {
 
 		ImageJFunctions.show(img);
 
+		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.1);
+		pmd.denoise(img, 10);
+	}
+
+	public static <T extends RealType<T> & NativeType<T>> void main(String[] args) {
 		new OwnTask1_PdeDenoiser();
 	}
 
@@ -216,7 +218,7 @@ public class OwnTask1_PdeDenoiser {
 		}
 
 		private <T extends RealType<T> & NativeType<T>> void convertImageToState(Img<T> img) {
-
+			currentState = Converters.convert((RandomAccessibleInterval<T>) img, (i, o) -> o.set(i.getRealDouble()), new DoubleType());
 		}
 
 		private void computeFlux() {
