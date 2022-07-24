@@ -55,13 +55,13 @@ public class OwnTask1_PdeDenoiser {
 	}
 
 	/**
-	 * Compute length of discrete gradient.
+	 * Compute Perona-Malik flux 1/(1+|Du|^2/lambda^2) Du of discrete gradient.
 	 *
 	 * @param 	gradient	
 	 *
-	 * @return 	squared length of gradient
+	 * @return 	flux
 	 */
-	private static <T extends NumericType<T> & NativeType<T>> Img<T> computeGradientLength(Img<T>[] gradient) {
+	private static <T extends NumericType<T> & NativeType<T>> void computeFlux(Img<T>[] gradient) {
 		int n = gradient.length;
 		final Img<T> duSquared = gradient[0].factory().create(gradient[0]);
 		final Cursor<T> cursorDu = duSquared.cursor();
@@ -75,15 +75,96 @@ public class OwnTask1_PdeDenoiser {
 		T component = null;
 		while (cursorDu.hasNext()) {
 			val = cursorDu.next();
-			val.setZero();
+			val.setOne(); // TODO: introduce parameter lambda^2 here
 			for (int i=0; i<n; ++i) {
-				component = cursorComponent[i].next();
+				component = cursorComponent[i].next().copy();
 				component.mul(component);
 				val.add(component);
 			}
+			val.pow(-1);
+			for (int i=0; i<n; ++i) {
+				component.mul(val);
+				cursorComponent[i].get().set(component);
+			}
+		}
+	}
+
+	/**
+	 * Compute Perona-Malik denoising of image.
+	 *
+	 * @param 	img	
+	 * @param 	nTimeSteps	
+	 *
+	 * @return 	denoised image
+	 */
+	private static <T extends NumericType<T> & NativeType<T>> Img<T> denoise(Img<T> img, int nTimeSteps) {
+		int n = img.numDimensions();
+		final Img<T> denoisedImg = copyImage(img);
+		final Img<T>[] gradient = (Img<T>[]) Array.newInstance(img.getClass(), n);
+		final Img<T>[] flux = null;
+
+		for (int i=0; i<n; ++i) {
+			gradient[i] = img.factory().create(img);
 		}
 
-		return duSquared;
+		for (int t=0; t<nTimeSteps; ++t) {
+			for (int i=0; i<n; ++i) {
+				computeFiniteDifferences(img, gradient[i], i);
+			}
+			computeFlux(gradient);
+			for (int i=0; i<n; ++i) {
+				computeFiniteDifferences(gradient[i], gradient[i], i);
+			}
+			addTimeStep(denoisedImg, gradient);
+		}
+
+		return denoisedImg;
+	}
+
+	/**
+	 * Generic, type-agnostic method to create an identical copy of an Img
+	 *
+	 * @param input - the Img to copy
+	 * @return - the copy of the Img
+	 */
+	private static <T extends NumericType<T> & NativeType<T>> Img<T> copyImage(final Img<T> input) {
+		Img<T> output = input.factory().create(input);
+		Cursor<T> cursorInput = input.cursor();
+		Cursor<T> cursorOutput = output.cursor();
+ 
+		while (cursorInput.hasNext()) {
+			cursorInput.fwd();
+			cursorOutput.fwd();
+			cursorOutput.get().set(cursorInput.get());
+		}
+ 
+		return output;
+	}
+
+	/**
+	 * Add one timestep to the image.
+	 *
+	 * @param 	img	
+	 * @param 	update	
+	 */
+	private static <T extends NumericType<T> & NativeType<T>> void addTimeStep(Img<T> img, Img<T>[] update) {
+		int n = update.length;
+		final Cursor<T> cursor = img.cursor();
+		final Cursor<T>[] cursorComponent = (Cursor<T>[]) Array.newInstance(cursor.getClass(), n);
+
+		for (int i=0; i<n; ++i) {
+			cursorComponent[i] = update[i].cursor();
+		}
+
+		T val = null;
+		T component = null;
+		while (cursor.hasNext()) {
+			val = cursor.next();
+			for (int i=0; i<n; ++i) {
+				component = cursorComponent[i].next();
+				val.add(component); // TODO: add step size
+			}
+		}
 	}
 
 	/**
@@ -98,14 +179,8 @@ public class OwnTask1_PdeDenoiser {
 		final Img<T> img = ImagePlusImgs.from(IJ.openImage(imgLocation));
 		ImageJFunctions.show(img);
 
-		final Img<T>[] gradient = (Img<T>[]) Array.newInstance(img.getClass(), 2);
-		for (int i=0; i<2; ++i) {
-			gradient[i] = img.factory().create(img);
-			computeFiniteDifferences(img, gradient[i], i);
-			ImageJFunctions.show(gradient[i]);
-		}
+		denoise(img, 10);
 
-		final Img<T> duSquared = computeGradientLength(gradient);
-		ImageJFunctions.show(duSquared);
+		ImageJFunctions.show(img);
 	}
 }
