@@ -182,7 +182,8 @@ public class OwnTask1_PdeDenoiser {
 		ImageJFunctions.show(img);
 
 		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.1);
-		pmd.denoise(img, 10);
+		RandomAccessibleInterval<DoubleType> denoisedImg = pmd.denoise(img, 10);
+		ImageJFunctions.show(denoisedImg);
 	}
 
 	public static <T extends RealType<T> & NativeType<T>> void main(String[] args) {
@@ -206,15 +207,15 @@ public class OwnTask1_PdeDenoiser {
 			this.beta = new DoubleType(beta);
 		}
 
-		public <T extends RealType<T> & NativeType<T>> Img<T> denoise(Img<T> img, int nSteps) {
+		public <T extends RealType<T> & NativeType<T>> RandomAccessibleInterval<DoubleType> denoise(Img<T> img, int nSteps) {
 			convertImageToState(img);
 			for (int k=0; k<nSteps; ++k) {
 				computeFlux();
 				updateState();
 			}
-			cleanUp();
+			clearTemporaryVariables();
 
-			return stateAsImageOfType(img.firstElement().getClass());
+			return currentState;
 		}
 
 		private <T extends RealType<T> & NativeType<T>> void convertImageToState(Img<T> img) {
@@ -229,12 +230,7 @@ public class OwnTask1_PdeDenoiser {
 
 		}
 		
-		private <T extends RealType<T> & NativeType<T>> Img<T> stateAsImageOfType(Class<?> cls) {
-
-			return null;
-		}
-
-		private void cleanUp() {
+		private void clearTemporaryVariables() {
 			flux = null;
 		}
 	}
