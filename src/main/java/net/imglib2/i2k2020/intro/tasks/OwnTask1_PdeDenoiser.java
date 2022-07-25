@@ -8,6 +8,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Cursor;
+import net.imglib2.Point;
 import net.imglib2.view.Views;
 import net.imglib2.converter.Converters;
 import net.imglib2.type.NativeType;
@@ -183,7 +184,7 @@ public class OwnTask1_PdeDenoiser {
 
 		ImageJFunctions.show(img);
 
-		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.1);
+		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.001);
 		Img<DoubleType> denoisedImg = pmd.denoise(img, 10);
 		ImageJFunctions.show(denoisedImg);
 	}
@@ -198,6 +199,7 @@ public class OwnTask1_PdeDenoiser {
 		private DoubleType beta;
 		private Img<DoubleType> currentState;
 		private Img<DoubleType>[] flux;
+		final private DoubleType one = new DoubleType(1.);
 
 		public PeronaMalikDenoiser(double alpha, double beta) {
 			setParameters(alpha, beta);
@@ -244,8 +246,8 @@ public class OwnTask1_PdeDenoiser {
 
 		private void copyValues(RandomAccessibleInterval<DoubleType> source, Img<DoubleType> target) {
 			final RandomAccess<DoubleType> sourceAccess = source.randomAccess();
-			Cursor<DoubleType> targetCursor = target.localizingCursor();
-			final long[] position = new long[numDimensions];
+			final Cursor<DoubleType> targetCursor = target.localizingCursor();
+			final Point position = new Point(numDimensions);
 			while (targetCursor.hasNext()) {
 				targetCursor.fwd();
 				targetCursor.localize(position);
@@ -260,7 +262,54 @@ public class OwnTask1_PdeDenoiser {
 		}
 
 		private void computeFlux() {
+			final Cursor<DoubleType> stateCursor = currentState.localizingCursor();
+			final Cursor<DoubleType>[] fluxCursor = (Cursor<DoubleType>[]) Array.newInstance(currentState.cursor().getClass(), numDimensions);
+			final RandomAccessible<DoubleType> infiniteState = Views.extendMirrorSingle(currentState);
+			final RandomAccess<DoubleType> stateAccess = infiniteState.randomAccess();
 
+			for (int k=0; k<numDimensions; ++k) {
+				fluxCursor[k] = flux[k].cursor();
+			}
+
+			final Point position = new Point(numDimensions);
+			DoubleType diff = new DoubleType();
+			DoubleType coeff = new DoubleType();
+
+			while (stateCursor.hasNext()) {
+				stateCursor.fwd();
+				stateCursor.localize(position);
+				coeff.setZero();
+
+				for (int d=0; d<numDimensions; ++d) {
+					fluxCursor[d].fwd();
+					computeDirectionalDerivative(stateAccess, position, d, diff);
+					fluxCursor[d].get().setReal(diff.getRealDouble());
+					diff.mul(diff);
+					coeff.add(diff);
+				}
+				
+				transformDiffusionCoefficient(coeff);
+
+				for (int d=0; d<numDimensions; ++d) {
+					fluxCursor[d].get().mul(coeff);
+				}
+			}
+		}
+
+		// s -> 1/(1+s/beta)
+		private void transformDiffusionCoefficient(DoubleType s) {
+			s.div(beta);
+			s.add(one);
+			s.pow(-1);
+		}
+
+		// compute difference of pixel with position +1/-1 in specified dimension
+		private void computeDirectionalDerivative(RandomAccess<DoubleType> access, Point position, int dimension, DoubleType result) {
+				position.move(1, dimension);
+				result.setReal(access.setPositionAndGet(position).getRealDouble());
+				position.move(-2, dimension);
+				result.sub(access.setPositionAndGet(position));
+				position.move(1, dimension);
 		}
 		
 		private void updateState() {
