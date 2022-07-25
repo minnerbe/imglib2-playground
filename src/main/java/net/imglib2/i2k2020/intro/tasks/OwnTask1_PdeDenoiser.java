@@ -2,6 +2,8 @@ package net.imglib2.i2k2020.intro.tasks;
 
 import ij.IJ;
 import net.imglib2.img.Img;
+import net.imglib2.img.ImgFactory;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
@@ -182,7 +184,7 @@ public class OwnTask1_PdeDenoiser {
 		ImageJFunctions.show(img);
 
 		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.1);
-		RandomAccessibleInterval<DoubleType> denoisedImg = pmd.denoise(img, 10);
+		Img<DoubleType> denoisedImg = pmd.denoise(img, 10);
 		ImageJFunctions.show(denoisedImg);
 	}
 
@@ -191,15 +193,17 @@ public class OwnTask1_PdeDenoiser {
 	}
 
 	private class PeronaMalikDenoiser {
+		private int numDimensions;
 		private DoubleType alpha;
 		private DoubleType beta;
-		private RandomAccessibleInterval<DoubleType> currentState;
-		private RandomAccessibleInterval<DoubleType>[] flux;
+		private Img<DoubleType> currentState;
+		private Img<DoubleType>[] flux;
 
 		public PeronaMalikDenoiser(double alpha, double beta) {
 			setParameters(alpha, beta);
 			currentState = null;
 			flux = null;
+			this.numDimensions = -1;
 		}
 
 		public void setParameters(double alpha, double beta) {
@@ -207,8 +211,8 @@ public class OwnTask1_PdeDenoiser {
 			this.beta = new DoubleType(beta);
 		}
 
-		public <T extends RealType<T> & NativeType<T>> RandomAccessibleInterval<DoubleType> denoise(Img<T> img, int nSteps) {
-			convertImageToState(img);
+		public <T extends RealType<T> & NativeType<T>> Img<DoubleType> denoise(Img<T> img, int nSteps) {
+			initializeState(img);
 			for (int k=0; k<nSteps; ++k) {
 				computeFlux();
 				updateState();
@@ -218,8 +222,41 @@ public class OwnTask1_PdeDenoiser {
 			return currentState;
 		}
 
-		private <T extends RealType<T> & NativeType<T>> void convertImageToState(Img<T> img) {
-			currentState = Converters.convert((RandomAccessibleInterval<T>) img, (i, o) -> o.set(i.getRealDouble()), new DoubleType());
+		private <T extends RealType<T> & NativeType<T>> void initializeState(Img<T> img) {
+			numDimensions = img.numDimensions();
+			currentState = convertToDouble(img);
+			flux = (Img<DoubleType>[]) Array.newInstance(currentState.getClass(), numDimensions);
+			for (int k=0; k<numDimensions; ++k) {
+				flux[k] = createNewDoubleImageFrom(img);
+			}
+		}
+		
+		private <T extends RealType<T> & NativeType<T>> Img<DoubleType> convertToDouble(Img<T> img) {
+			currentState = createNewDoubleImageFrom(img);
+			final RandomAccessibleInterval<DoubleType> conversionWrapper = Converters.convert(
+					(RandomAccessibleInterval<T>) img,
+					(i, o) -> o.set(i.getRealDouble()),
+					new DoubleType());
+			copyValues(conversionWrapper, currentState);
+			
+			return currentState;
+		}
+
+		private void copyValues(RandomAccessibleInterval<DoubleType> source, Img<DoubleType> target) {
+			final RandomAccess<DoubleType> sourceAccess = source.randomAccess();
+			Cursor<DoubleType> targetCursor = target.localizingCursor();
+			final long[] position = new long[numDimensions];
+			while (targetCursor.hasNext()) {
+				targetCursor.fwd();
+				targetCursor.localize(position);
+				targetCursor.get().set(sourceAccess.setPositionAndGet(position));
+			}
+		}
+
+		private <T extends RealType<T> & NativeType<T>> Img<DoubleType> createNewDoubleImageFrom(Img<T> img) {
+			final ImgFactory imgFactory = new ArrayImgFactory(new DoubleType());
+			final long[] dimensions = img.maxAsLongArray();
+			return imgFactory.create(dimensions);
 		}
 
 		private void computeFlux() {
