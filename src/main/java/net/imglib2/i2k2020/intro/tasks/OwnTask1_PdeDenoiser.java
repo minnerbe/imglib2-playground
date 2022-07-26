@@ -153,7 +153,7 @@ public class OwnTask1_PdeDenoiser {
 				for (int d=0; d<numDimensions; ++d) {
 					fluxCursor[d].fwd();
 					computeDirectionalDerivative(stateAccess, position, d, diff);
-					fluxCursor[d].get().setReal(diff.getRealDouble());
+					fluxCursor[d].get().set(diff.get());
 					diff.mul(diff);
 					coeff.add(diff);
 				}
@@ -181,7 +181,7 @@ public class OwnTask1_PdeDenoiser {
 		 */
 		private void computeDirectionalDerivative(RandomAccess<DoubleType> access, Point position, int dimension, DoubleType result) {
 				position.move(1, dimension);
-				result.setReal(access.setPositionAndGet(position).getRealDouble());
+				result.set(access.setPositionAndGet(position).get());
 				position.move(-2, dimension);
 				result.sub(access.setPositionAndGet(position));
 				position.move(1, dimension);
