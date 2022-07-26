@@ -100,7 +100,7 @@ public class OwnTask1_PdeDenoiser {
 			currentState = createNewDoubleImageFrom(img);
 			final RandomAccessibleInterval<DoubleType> conversionWrapper = Converters.convert(
 					(RandomAccessibleInterval<T>) img,
-					(i, o) -> o.set(i.getRealDouble()),
+					(i, o) -> o.set(i.getRealDouble()/255.),
 					new DoubleType());
 			copyValues(conversionWrapper, currentState);
 			
@@ -120,8 +120,7 @@ public class OwnTask1_PdeDenoiser {
 
 		private <T extends RealType<T> & NativeType<T>> Img<DoubleType> createNewDoubleImageFrom(Img<T> img) {
 			final ImgFactory imgFactory = new ArrayImgFactory(new DoubleType());
-			final long[] dimensions = img.maxAsLongArray();
-			return imgFactory.create(dimensions);
+			return imgFactory.create(img.dimensionsAsLongArray());
 		}
 
 		/**
