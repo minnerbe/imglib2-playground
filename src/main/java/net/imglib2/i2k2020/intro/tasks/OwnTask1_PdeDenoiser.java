@@ -313,7 +313,28 @@ public class OwnTask1_PdeDenoiser {
 		}
 		
 		private void updateState() {
+			final Cursor<DoubleType> stateCursor = currentState.localizingCursor();
+			final RandomAccess<DoubleType>[] fluxAccess =
+			(RandomAccess<DoubleType>[]) Array.newInstance(Views.extendMirrorSingle(flux[0]).randomAccess().getClass(), numDimensions);
 
+			for (int k=0; k<numDimensions; ++k) {
+				fluxAccess[k] = Views.extendMirrorSingle(flux[k]).randomAccess();
+			}
+
+			final Point position = new Point(numDimensions);
+			DoubleType diff = new DoubleType();
+
+			while (stateCursor.hasNext()) {
+				stateCursor.fwd();
+				stateCursor.localize(position);
+				diff.setZero();
+
+				for (int d=0; d<numDimensions; ++d) {
+					computeDirectionalDerivative(fluxAccess[d], position, d, diff);
+					diff.mul(alpha);
+					stateCursor.get().add(diff);
+				}
+			}
 		}
 		
 		private void clearTemporaryVariables() {
