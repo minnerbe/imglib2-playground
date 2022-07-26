@@ -33,12 +33,17 @@ public class OwnTask1_PdeDenoiser {
 	public <T extends RealType<T> & NativeType<T>> OwnTask1_PdeDenoiser() {
 		// open grayscale image
 		final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/noisy-image.pgm";
-		// final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/plane-with-noise.pgm";
+		//final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/plane-with-noise.pgm";
 		Img<T> img = ImagePlusImgs.from(IJ.openImage(imgLocation));
 		ImageJFunctions.show(img);
 
-		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(1.0, 0.001);
-		Img<DoubleType> denoisedImg = pmd.denoise(img, 1000);
+		final double h = 1./200.;
+		final double alpha = 1e-5 / (h*h);
+		final double beta = 1e1 * h*h;
+
+		// for circle picture, use ~700 steps, for the plane picture ~100
+		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(alpha, beta);
+		Img<DoubleType> denoisedImg = pmd.denoise(img, 700);
 		ImageJFunctions.show(denoisedImg);
 	}
 
@@ -53,7 +58,7 @@ public class OwnTask1_PdeDenoiser {
 	 * 	where the flux is g(s) = 1/(1+s/lambda).
 	 * The parameter alpha steers the step sizes (alpha = delta t / h) of the
 	 * time discretization.  The parameter beta controls the strength of the
-	 * diffusion (beta = lambda / h^2).  The spatial step size of the finite
+	 * diffusion (beta = lambda * h^2).  The spatial step size of the finite
 	 * difference scheme is implicitly given by h>0.
 	 */
 	private class PeronaMalikDenoiser {
@@ -188,7 +193,7 @@ public class OwnTask1_PdeDenoiser {
 		private void updateState() {
 			final Cursor<DoubleType> stateCursor = currentState.localizingCursor();
 			final RandomAccess<DoubleType>[] fluxAccess =
-			(RandomAccess<DoubleType>[]) Array.newInstance(Views.extendMirrorSingle(flux[0]).randomAccess().getClass(), numDimensions);
+				(RandomAccess<DoubleType>[]) Array.newInstance(Views.extendMirrorSingle(flux[0]).randomAccess().getClass(), numDimensions);
 
 			for (int k=0; k<numDimensions; ++k) {
 				fluxAccess[k] = Views.extendMirrorSingle(flux[k]).randomAccess();
