@@ -1,0 +1,10 @@
+Switch to root directory.
+
+Compile:
+	mvn
+
+
+Run:
+	mvn exec:java -Dexec.mainClass="package.path.class"
+
+(Note: full class name with full hierarchy, no .java!)
