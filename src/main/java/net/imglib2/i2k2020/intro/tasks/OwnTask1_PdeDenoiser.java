@@ -32,8 +32,8 @@ public class OwnTask1_PdeDenoiser {
 
 	public <T extends RealType<T> & NativeType<T>> OwnTask1_PdeDenoiser() {
 		// open grayscale image
-		final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/noisy-image.pgm";
-		//final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/plane-with-noise.pgm";
+		final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/fiji-noise.pgm";
+		//final String imgLocation = "/home/michael/data/Programming/Java/imglib2-intro/pictures/lena-stephan-noise.pgm";
 		Img<T> img = ImagePlusImgs.from(IJ.openImage(imgLocation));
 		ImageJFunctions.show(img);
 
@@ -41,10 +41,11 @@ public class OwnTask1_PdeDenoiser {
 		final double alpha = 1e-5 / (h*h);
 		final double beta = 1e1 * h*h;
 
-		// for circle picture, use ~700 steps, for the plane picture ~100
+		// for black/white picture, use ~700 steps, for the lena picture ~100
 		final PeronaMalikDenoiser pmd = new PeronaMalikDenoiser(alpha, beta);
 		Img<DoubleType> denoisedImg = pmd.denoise(img, 700);
 		ImageJFunctions.show(denoisedImg);
+		//IJ.save(ImageJFunctions.wrap(denoisedImg, "test"), "denoised.pgm");
 	}
 
 	public static <T extends RealType<T> & NativeType<T>> void main(String[] args) {
